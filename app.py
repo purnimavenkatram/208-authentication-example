@@ -2,12 +2,13 @@ import dash
 import dash_auth
 from dash import html, dcc
 from dash.dependencies import Input, Output, State
+import pandas as pd
 import plotly.graph_objects as go
-
+import plotly.express as px
 
 # Keep this out of source code repository - save in a file or a database
 VALID_USERNAME_PASSWORD_PAIRS = {
-    'Mickey': 'Mouse', 'Donald': 'Duck'
+    'Mickey': 'Mouse', 'Donald': 'Duck' , 'Daisy':'Duck'
 }
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -23,15 +24,16 @@ auth = dash_auth.BasicAuth(
 app.layout = html.Div([
     html.H1('Welcome to the app'),
     html.H3('You are successfully authorized'),
-    dcc.Dropdown(
-        id='dropdown',
-        options=[{'label': i, 'value': i} for i in [1, 2, 3, 4, 5]],
-        value=1
+    dcc.RangeSlider(
+        id='range-slider',
+        min=0, max=2.5, step=0.1,
+        marks={0: '0', 2.5: '2.5'},
+        value=[0.5, 2]
     ),
 
     html.Div(id='graph-title'),
     dcc.Graph(id='graph'),
-    html.A('Code on Github', href='https://github.com/austinlasseter/dash-auth-example'),
+    html.A('Code on Github', href='https://github.com/purnimavenkatram/208-authentication-example'),
     html.Br(),
     html.A("Data Source", href='https://dash.plotly.com/authentication'),
 ], className='container')
@@ -39,32 +41,17 @@ app.layout = html.Div([
 @app.callback(
     Output('graph-title', 'children'),
     Output('graph', 'figure'),
-    Input('dropdown', 'value'),
+    Input('range-slider', 'value'),
     )
-def update_graph(dropdown_value):
-
-    x_values = [-3,-2,-1,0,1,2,3]
-    y_values = [x**dropdown_value for x in x_values]
-    colors=['black','red','green','blue','orange','purple']
-    graph_title='Graph of {}'.format(str(dropdown_value))
-
-
-    trace0 = go.Scatter(
-        x = x_values,
-        y = y_values,
-        mode = 'lines',
-        marker = {'color': colors[dropdown_value]},
-    )
-
-    # assign traces to data
-    data = [trace0]
-    layout = go.Layout(
-        title = graph_title
-    )
-
-    # Generate the figure dictionary
-    fig = go.Figure(data=data,layout=layout)
-
+def update_graph(slider_range):
+    df = px.data.iris() # replace with your own data source
+    low, high = slider_range
+    mask = (df['petal_width'] > low) & (df['petal_width'] < high)
+    fig = px.scatter(
+        df[mask], x="sepal_width", y="sepal_length", 
+        color="species", size='petal_length', 
+        hover_data=['petal_width'])
+    graph_title='Graph of filtered petal width of {}'.format(str(slider_range))
     return graph_title, fig
 
 
